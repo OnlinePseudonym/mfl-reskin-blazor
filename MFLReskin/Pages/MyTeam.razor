@@ -1,0 +1,42 @@
+﻿@page "/my-team"
+@using MFLReskin.Models;
+@using System.Net.Http
+@using TG.Blazor.IndexedDB;
+@using System.Text.Json;
+@inject HttpClient Http
+@inject IndexedDBManager DbManager
+
+<h1>Loading Teams</h1>
+
+<button type="button" @onclick="GetDB">Get DB</button>
+
+@code {
+
+    protected override async Task OnInitializedAsync()
+    {
+        var leagues = await Http.GetJsonAsync<IEnumerable<League>>("http://localhost:7071/api/GetLeagues?userId=aRxu28yWvrL3j0P5bQc=");
+
+        foreach(var league in leagues)
+        {
+            Console.WriteLine(league.Name);
+            Console.WriteLine(league.LeagueId);
+
+            var roster = await Http.GetJsonAsync<List<Player>>($"http://localhost:7071/api/GetRoster?userId=aRxu28yWvrL3j0P5bQc=&leagueid={league.LeagueId}&franchiseid={league.FranchiseId}");
+
+            foreach(var spot in roster)
+            {
+                var player = await DbManager.GetRecordById<int, Player>("Players", spot.Id);
+
+                Console.WriteLine(player.Name);
+                Console.WriteLine(player.Position);
+            }
+        }
+    }
+
+    private async Task GetDB()
+    {
+        var results = await DbManager.GetRecords<Player>("Players");
+
+        Console.WriteLine(results.Count);
+    }
+}

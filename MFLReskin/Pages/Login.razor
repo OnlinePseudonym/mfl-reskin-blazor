@@ -1,0 +1,35 @@
+﻿@page "/login"
+@using MFLReskin.Models;
+@using System.Net.Http
+@inject HttpClient Http
+
+<h1>Login</h1>
+
+<EditForm Model="@user" OnValidSubmit="@HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <InputText id="username" @bind-Value="user.Username" />
+    <InputText type="password" id="password" @bind-Value="user.Password" />
+
+    <button type="submit">Submit</button>
+</EditForm>
+
+@code {
+    private User user = new User();
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            var responseJson = await Http.PostJsonAsync<User>("http://localhost:7071/api/login", user);
+
+            Console.WriteLine(responseJson.UserId);
+        }
+        catch(Exception ex)
+        {
+            Console.WriteLine($"FAILURE: {ex}");
+        }
+
+    }
+}

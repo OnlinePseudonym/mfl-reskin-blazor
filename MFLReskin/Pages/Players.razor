@@ -1,0 +1,53 @@
+﻿@page "/players"
+@using MFLReskin.Models;
+@using System.Net.Http
+@using TG.Blazor.IndexedDB;
+@inject HttpClient Http
+@inject IndexedDBManager DbManager
+
+<h1>Loading Players</h1>
+
+<button type="button" @onclick="HandleClick">Load Players</button>
+<button type="button" @onclick="GetDB">Get DB</button>
+
+@code {
+
+    private async Task GetDB()
+    {
+        var results = await DbManager.GetRecords<Player>("Players");
+
+        Console.WriteLine(results.Count);
+    }
+
+    private async Task HandleClick()
+    {
+        try
+        {
+            var responseJson = await Http.GetJsonAsync<Dictionary<string, Dictionary<string, string>>>("http://localhost:7071/api/GetAllPlayers?userId=aRxu28yWvrL3j0P5bQc=&JSON=1");
+
+            var players = new List<Player>();
+
+            foreach (var value in responseJson.Values)
+            {
+                var player = new Player(value);
+
+                var record = new StoreRecord<Player>
+                {
+                    Storename = "Players",
+                    Data = player
+                };
+
+                await DbManager.AddRecord(record);
+            }
+
+            Console.WriteLine(players.ToArray().ToString());
+            Console.WriteLine("players Loaded");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"FAILURE: {ex}");
+
+        }
+
+    }
+}
