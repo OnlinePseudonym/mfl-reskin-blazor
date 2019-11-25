@@ -2,52 +2,86 @@
 @using MFLReskin.Models;
 @using System.Net.Http
 @using TG.Blazor.IndexedDB;
+@using System.Diagnostics;
 @inject HttpClient Http
 @inject IndexedDBManager DbManager
 
 <h1>Loading Players</h1>
 
 <button type="button" @onclick="HandleClick">Load Players</button>
-<button type="button" @onclick="GetDB">Get DB</button>
+<button type="button" @onclick="GetDBFromIndex">Get DB from index</button>
+<button type="button" @onclick="GetDB">Get DB from model</button>
 
 @code {
+    private readonly string endpointBase = "http://localhost:7071/api/";
+
+    private async Task GetDBFromIndex()
+    {
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
+        var players = await MFLReskin.Models.Players.CreateAsync(DbManager);
+        stopwatch.Stop();
+        Console.WriteLine(players.GetAllPlayers().Count() + " : " + stopwatch.ElapsedMilliseconds);
+    }
 
     private async Task GetDB()
     {
+        var stopwatch = new Stopwatch();
+        stopwatch.Start();
         var results = await DbManager.GetRecords<Player>("Players");
-
-        Console.WriteLine(results.Count);
+        stopwatch.Stop();
+        Console.WriteLine(results.Count + " : " + stopwatch.ElapsedMilliseconds);
     }
 
-    private async Task HandleClick()
+    private async void HandleClick()
     {
-        try
+        var stopwatch = new Stopwatch();
+
+        var users = await DbManager.GetRecords<User>("User");
+        var curUser = users.FirstOrDefault();
+        bool isUpdate = false;
+
+        if (curUser == null)
         {
-            var responseJson = await Http.GetJsonAsync<Dictionary<string, Dictionary<string, string>>>("http://localhost:7071/api/GetAllPlayers?userId=aRxu28yWvrL3j0P5bQc=&JSON=1");
-
-            var players = new List<Player>();
-
-            foreach (var value in responseJson.Values)
-            {
-                var player = new Player(value);
-
-                var record = new StoreRecord<Player>
-                {
-                    Storename = "Players",
-                    Data = player
-                };
-
-                await DbManager.AddRecord(record);
-            }
-
-            Console.WriteLine(players.ToArray().ToString());
-            Console.WriteLine("players Loaded");
+            Console.WriteLine("User not authenticated, please login");
+            return;
         }
-        catch (Exception ex)
+
+        var playersEndpoint = $"{endpointBase}GetAllPlayers?userId={curUser.UserId}";
+
+        var playerRecords = await DbManager.GetRecords<Player>("Players");
+        var players = await MFLReskin.Models.Players.CreateAsync(DbManager);
+
+        if (playerRecords.Any()) isUpdate = true;
+
+        stopwatch.Start();
+        var newPlayers = await Http.GetJsonAsync<List<Player>>($"{playersEndpoint}");
+        stopwatch.Stop();
+        Console.WriteLine("hitting endpoint wrapper: " + stopwatch.ElapsedMilliseconds);
+
+        stopwatch.Reset();
+
+        stopwatch.Start();
+        if (isUpdate)
         {
-            Console.WriteLine($"FAILURE: {ex}");
-
+            players.UpdatePlayers(newPlayers);
         }
+        else
+        {
+            players.AddPlayers(newPlayers);
+        }
+        stopwatch.Stop();
+        Console.WriteLine("Updateing db: " + stopwatch.ElapsedMilliseconds);
+
+        curUser.LastDatabasePull = DateTime.Now;
+
+        var userRecord = new StoreRecord<User>
+        {
+            Storename = "User",
+            Data = curUser
+        };
+
+        await DbManager.UpdateRecord(userRecord);
 
     }
 }

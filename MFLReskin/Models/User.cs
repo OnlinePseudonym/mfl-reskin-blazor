@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace MFLReskin.Models
 {
@@ -17,5 +18,7 @@ namespace MFLReskin.Models
         public string LeagueId { get; set; }
         public string UserId { get; set; }
         public string Year { get; set; }
+        public DateTime LastLogin { get; set; }
+        public DateTime LastDatabasePull { get; set; }
     }
 }

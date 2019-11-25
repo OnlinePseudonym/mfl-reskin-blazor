@@ -1,4 +1,6 @@
-﻿namespace MFLReskin.Models
+﻿using System.Collections.Generic;
+
+namespace MFLReskin.Models
 {
     public class League
     {
@@ -7,5 +9,6 @@
         public string Name { get; set; }
         public string FranchiseName { get; set; }
         public int LeagueId { get; set; }
+        public List<Player> MyRoster { get; set; }
     }
 }

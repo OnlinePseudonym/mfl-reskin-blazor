@@ -18,18 +18,27 @@
 
         foreach(var league in leagues)
         {
-            Console.WriteLine(league.Name);
-            Console.WriteLine(league.LeagueId);
-
             var roster = await Http.GetJsonAsync<List<Player>>($"http://localhost:7071/api/GetRoster?userId=aRxu28yWvrL3j0P5bQc=&leagueid={league.LeagueId}&franchiseid={league.FranchiseId}");
+
+            var myRoster = new List<Player>();
 
             foreach(var spot in roster)
             {
                 var player = await DbManager.GetRecordById<int, Player>("Players", spot.Id);
+                player.Status = spot.Status;
 
-                Console.WriteLine(player.Name);
-                Console.WriteLine(player.Position);
-            }
+                myRoster.Add(player);
+            };
+
+            league.MyRoster = myRoster;
+
+            var record = new StoreRecord<League>
+            {
+                Storename = "Leagues",
+                Data = league
+            };
+
+            await DbManager.AddRecord(record);
         }
     }
 

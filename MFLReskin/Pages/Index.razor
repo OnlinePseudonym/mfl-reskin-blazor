@@ -1,7 +1,77 @@
 ﻿@page "/"
+@using TG.Blazor.IndexedDB;
+@using MFLReskin.Models
+@using System.Diagnostics;
+@inject HttpClient Http
+@inject IndexedDBManager DbManager
 
-<h1>Hello, world!</h1>
+<h1>Your Homepage</h1>
 
-Welcome to your new app.
+start loading some stuff
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+@code {
+    private Players players;
+    private readonly string endpointBase = "http://localhost:7071/api/";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var stopwatch = new Stopwatch();
+
+        var users = await DbManager.GetRecords<User>("User");
+        var curUser = users.FirstOrDefault();
+        bool isUpdate = false;
+
+        if (curUser == null)
+        {
+            Console.WriteLine("User not authenticated, please login");
+            return;
+        }
+
+        var playersEndpoint = $"{endpointBase}GetAllPlayers?userId={curUser.UserId}";
+
+        var playerRecords = await DbManager.GetRecords<Player>("Players");
+        var players = await MFLReskin.Models.Players.CreateAsync(DbManager);
+
+        if (playerRecords.Any()) isUpdate = true;
+
+        if (isUpdate)
+        {
+            if (curUser.LastDatabasePull >= DateTime.Today)
+            {
+                Console.WriteLine("Today's DB is already loaded");
+                return;
+            }
+
+            playersEndpoint += $"&since={curUser.LastDatabasePull}";
+        }
+
+        stopwatch.Start();
+        var newPlayers = await Http.GetJsonAsync<List<Player>>($"{playersEndpoint}");
+        stopwatch.Stop();
+        Console.WriteLine("hitting endpoint wrapper: " + stopwatch.ElapsedMilliseconds);
+
+        stopwatch.Reset();
+
+        stopwatch.Start();
+        if (isUpdate)
+        {
+            players.UpdatePlayers(newPlayers);
+        }
+        else
+        {
+            players.AddPlayers(newPlayers);
+        }
+        stopwatch.Stop();
+        Console.WriteLine("Updateing db: " + stopwatch.ElapsedMilliseconds);
+
+        curUser.LastDatabasePull = DateTime.Now;
+
+        var userRecord = new StoreRecord<User>
+        {
+            Storename = "User",
+            Data = curUser
+        };
+
+        await DbManager.UpdateRecord(userRecord);
+    }
+}

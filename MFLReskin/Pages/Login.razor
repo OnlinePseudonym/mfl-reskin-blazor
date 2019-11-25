@@ -1,7 +1,9 @@
 ﻿@page "/login"
 @using MFLReskin.Models;
 @using System.Net.Http
+@using TG.Blazor.IndexedDB;
 @inject HttpClient Http
+@inject IndexedDBManager DbManager
 
 <h1>Login</h1>
 
@@ -22,11 +24,21 @@
     {
         try
         {
-            var responseJson = await Http.PostJsonAsync<User>("http://localhost:7071/api/login", user);
+            var userResponse = await Http.PostJsonAsync<User>("http://localhost:7071/api/login", user);
 
-            Console.WriteLine(responseJson.UserId);
+            await DbManager.ClearStore("User");
+
+            userResponse.LastLogin = DateTime.Now;
+
+            var record = new StoreRecord<User>
+            {
+                Storename = "User",
+                Data = userResponse
+            };
+
+            await DbManager.AddRecord(record);
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             Console.WriteLine($"FAILURE: {ex}");
         }

@@ -12,22 +12,30 @@ namespace MFLReskin
             services.AddIndexedDB(dbStore =>
             {
                 dbStore.DbName = "MflPlayers";
-                dbStore.Version = 1;
+                dbStore.Version = 5;
 
                 dbStore.Stores.Add(new StoreSchema
                 {
                     Name = "Players",
-                    PrimaryKey = new IndexSpec { Name = "id", KeyPath = "id", Auto = true },
+                    PrimaryKey = new IndexSpec { Name = "id", KeyPath = "id", Auto = false },
                     Indexes = new List<IndexSpec>
                     {
-                        new IndexSpec{Name="name", KeyPath = "name", Auto=false},
-                        new IndexSpec{Name="team", KeyPath = "team", Auto=false},
-                        new IndexSpec{Name="position", KeyPath = "position", Auto=false},
-                        new IndexSpec{Name="statsGlobalId", KeyPath = "statsGlobalId", Auto=false},
-                        new IndexSpec{Name="statsId", KeyPath = "statsId", Auto=false},
-                        new IndexSpec{Name="statsDataId", KeyPath = "statsDataId", Auto=false}
-
+                        new IndexSpec{ Name="name", KeyPath = "name", Auto=false },
+                        new IndexSpec{ Name="team", KeyPath = "team", Auto=false },
+                        new IndexSpec{ Name="position", KeyPath = "position", Auto=false }
                     }
+                });
+
+                dbStore.Stores.Add(new StoreSchema
+                {
+                    Name = "Leagues",
+                    PrimaryKey = new IndexSpec { Name = "leagueId", KeyPath = "leagueId", Auto = false }
+                });
+
+                dbStore.Stores.Add(new StoreSchema
+                {
+                    Name = "User",
+                    PrimaryKey = new IndexSpec { Name = "userId", KeyPath = "userId", Auto = false }
                 });
             });
         }
